@@ -1,0 +1,131 @@
+犯的一个错误：在按例子操作的时候，MP.Weixin.qq.com 的 设置选项->公众号设置->消息加解密方式  要用明文模式，如果不用明文模式，还需要解密一次
+
+SDK源代码:
+https://github.com/JeffreySu/WeiXinMPSDK
+参考Sample源代码:
+Senparc.Weixin.MP.Sample
+课堂案例源代码下载:
+https://github.com/JeffreySu/WechatVideoCourse
+
+PPT  P6
+1.创建项目(ASP.NET MVC解决方案)  的创建
+  3:57 开始新建一个项目
+
+2.处理上下文(MessageContext)
+  6:43 开始
+  7:00 开始在新项目里添加类库   类库名称 SenparcClass.Service
+  7:40 把SenparcClass.Service类库添加到  SenparcClass的项目引用里面
+  8:10 删除默认的 class1 在SenparcClass.Service里面选择添加类CustomMessageContext.cs 并将其设置为public
+  9:40 在SenparcClass.Service里面安装SDK   在SenparcClass.Service单击右键，选择管理NuGet程序包   在浏览里选Senparc.Weixin.MP
+
+3.创建MessageHandler类
+  11:35 开始
+  在SenparcClass.Service下创建的类的名字叫CustomMessageHandler.cs
+  也要改为公共类  12:15
+  13:00 有个resharper ultimate 插件，那个插件好像是要另外下载的
+  13:40 默认生成的构造函数里  NotImplementedException(); 是一个抛出异常
+
+4.创建Controller及Action
+  14:30 在 SemparcClass下的 Controllers下面添加一个类 WeixinController.cs
+  需要引用using System.Web.Mvc;
+  在Senparc.Weixin.MP.Sample里的Controllers里面WeixinController.cs
+
+  /// <summary>
+        
+  /// 微信后台验证地址（使用Get），微信后台的“接口配置信息”的Url填写如：http://sdk.weixin.senparc.com/weixin
+        
+  /// </summary>
+
+        [HttpGet]
+
+        [ActionName("Index")]
+
+        public ActionResult Get(PostModel postModel, string echostr)
+ 
+       {
+
+            if(CheckSignature.Check(postModel.Signature, postModel.Timestamp, postModel.Nonce, Token))
+
+            {
+
+                return Content(echostr); //返回随机字符串则表示验证通过
+
+            }
+
+            else
+
+            {
+
+                return Content("failed:" + postModel.Signature + "," + MP.CheckSignature.GetSignature(postModel.Timestamp, postModel.Nonce, Token) + "。" +
+                    "如果你在浏览器中看到这句话，说明此地址可以被作为微信公众账号后台的Url，请注意保持Token一致。");
+
+            }
+
+        }
+
+这部分代码粘贴到目标代码中去
+
+要把Senparc.Weixin.MP.Sample的  Web.config里面的微信公众号的信息拷贝过去
+
+
+    <!-- 微信公众号URL对接信息 -->
+    <add key="WeixinToken" value="应用服务器（开发者服务器）URL对应的Token" />
+    <add key="WeixinEncodingAESKey" value="应用服务器（开发者服务器）URL对应的消息加解密密钥" />
+    <!-- 高级接口信息 -->
+    <add key="WeixinAppId" value="微信AppId" />
+    <add key="WeixinAppSecret" value="微信AppSecret" />
+
+在WeixinController里面添加
+public static readonly string Token = WebConfigurationManager.AppSettings["WeixinToken"];
+
+20:30 编译结束  访问刚才的网址
+22:00 访问公众号平台基本配置
+25:00 解决访问的公众号有个回复，在WeixinController.cs里面再建一个 ActionResult
+
+
+        [HttpPost]
+        [ActionName("Index")]
+        public ActionResult Post(PostModel postModel)
+        {
+            //创建MessageHandler实例
+            var messageHandler = new CustomMessageHandler(Request.InputStream, postModel);
+            //执行
+            messageHandler.Execute();
+            //返回
+            return Content(messageHandler.FinalResponseDocument.ToString());
+        }
+
+
+在CustomMessageHandler.cs里面
+
+        public override IResponseMessageBase DefaultResponseMessage(IRequestMessageBase requestMessage)
+        {
+            //throw new NotImplementedException();
+            var responseMessage = requestMessage.CreateResponseMessage<ResponseMessageText>();
+            responseMessage.Content = "当前服务器时间" + DateTime.Now;
+            return responseMessage;
+        }
+这个地方做个修改
+
+30:15 重新用FTP 上传编译好的bin目录
+
+5.微信后台配置
+6.完成配置
+7.后续开发
+
+
+开发秘籍
+1.不同请求消息处理(RequestMessage)
+32:20  处理文字消息
+35:32  处理位置消息
+38:18  如何在 Senparc.Weixin.MP.Sample里面找到如何处理一张图片的信息方法
+40:42编译上传
+
+2.不同响应消息处理(ResponseMessage)
+41:27
+
+41:35开始说一个例子按一个按钮，返回一个News消息，带图带链接
+
+3.不返回任何消息
+47:51  这个地方我有一点小问题，还没有做实验
+这里面有个技巧，安装 Senparc.****.***.MVC
